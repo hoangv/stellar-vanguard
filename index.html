@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -348,7 +348,38 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const bgm = document.getElementById('bgm');
-        const GAME_VERSION = 'v1.7';
+        const GAME_VERSION = 'v1.8';
+        const PERF_TUNING = {
+            desktop: {
+                canvasScaleCap: 1.5,
+                starCount: 80,
+                particleScale: 1,
+                particleCap: 360,
+                bombCoreParticles: 36,
+                bombEnemyParticles: 14,
+                bombBulletParticles: 6,
+                bombHazardParticles: 12,
+                bombDropCap: Infinity
+            },
+            mobile: {
+                canvasScaleCap: 1,
+                starCount: 48,
+                particleScale: 0.6,
+                particleCap: 180,
+                bombCoreParticles: 22,
+                bombEnemyParticles: 8,
+                bombBulletParticles: 3,
+                bombHazardParticles: 6,
+                bombDropCap: 8
+            }
+        };
+
+        function detectMobilePerformanceMode() {
+            const coarsePointer = typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+            const narrowScreen = Math.min(window.innerWidth, window.innerHeight) <= 820;
+            return coarsePointer || narrowScreen;
+        }
+
         const scoreEl = document.getElementById('score-display');
         const bestEl = document.getElementById('best-display');
         const buildDisplay = document.getElementById('build-display');
@@ -637,8 +668,12 @@
 
         // --- GAME ENGINE ---
         class ParticleSystem {
-            constructor() { this.particles = []; }
+            constructor(maxParticles = 240) {
+                this.particles = [];
+                this.maxParticles = maxParticles;
+            }
             spawn(x, y, color, size, vx, vy, life) {
+                if (this.particles.length >= this.maxParticles) return;
                 this.particles.push({ x, y, color, size, vx, vy, life, maxLife: life });
             }
             update(ctx) {
@@ -657,9 +692,9 @@
         }
 
         class Starfield {
-            constructor(w, h) {
+            constructor(w, h, count = CONFIG.starCount) {
                 this.stars = [];
-                for (let i = 0; i < CONFIG.starCount; i++) {
+                for (let i = 0; i < count; i++) {
                     this.stars.push({ x: Math.random()*w, y: Math.random()*h, z: Math.random()*4+1, size: Math.random()*1.5+0.5 });
                 }
             }
@@ -677,9 +712,11 @@
 
         class Game {
             constructor() {
+                this.isMobileProfile = detectMobilePerformanceMode();
+                this.perf = this.isMobileProfile ? PERF_TUNING.mobile : PERF_TUNING.desktop;
                 this.resize();
-                this.stars = new Starfield(this.width, this.height);
-                this.particles = new ParticleSystem();
+                this.stars = new Starfield(this.width, this.height, this.perf.starCount);
+                this.particles = new ParticleSystem(this.perf.particleCap);
                 this.score = 0;
                 this.highScore = parseInt(localStorage.getItem('vanguard_mobile_best')) || 0;
                 this.state = 'MENU';
@@ -714,6 +751,7 @@
                 this.formations = new Map();
                 this.formationSeed = 0;
                 this.controlMode = 'mouse';
+                this.hudDirty = true;
 
                 const handleInput = (e) => {
                     const t = e.touches ? e.touches[0] : e;
@@ -737,13 +775,27 @@
                     smartBombButton.addEventListener('click', () => this.triggerSmartBomb());
                 }
                 bestEl.innerText = this.highScore;
-                this.updateHUD();
+                this.requestHUDUpdate();
+                this.flushHUDUpdate(true);
                 this.loop();
             }
 
             resize() {
                 this.width = window.innerWidth; this.height = window.innerHeight;
-                canvas.width = this.width; canvas.height = this.height;
+                const deviceScale = window.devicePixelRatio || 1;
+                const scaleCap = this.perf?.canvasScaleCap || 1;
+                const scale = Math.min(deviceScale, scaleCap);
+                this.canvasScale = scale;
+                canvas.width = Math.max(1, Math.round(this.width * scale));
+                canvas.height = Math.max(1, Math.round(this.height * scale));
+                canvas.style.width = `${this.width}px`;
+                canvas.style.height = `${this.height}px`;
+                if (typeof ctx.setTransform === 'function') {
+                    ctx.setTransform(scale, 0, 0, scale, 0, 0);
+                }
+                if (typeof ctx.imageSmoothingEnabled === 'boolean') {
+                    ctx.imageSmoothingEnabled = true;
+                }
             }
 
             getSelectedLoadout() {
@@ -825,7 +877,7 @@
             activateWeapon(mode) {
                 this.weaponMode = mode;
                 this.weaponTimer = 0;
-                this.updateHUD();
+                this.requestHUDUpdate();
             }
 
             triggerSmartBomb() {
@@ -833,19 +885,23 @@
                 this.smartBombCharges -= 1;
 
                 const radius = CONFIG.smartBombRadius;
-                this.explode(this.player.x, this.player.y, '#22d3ee', 36);
+                this.explode(this.player.x, this.player.y, '#22d3ee', this.perf.bombCoreParticles);
 
                 const enemyBullets = [...this.enemyBullets];
                 this.enemyBullets = [];
                 enemyBullets.forEach((bullet) => {
-                    this.explode(bullet.x, bullet.y, '#67e8f9', 6);
+                    this.explode(bullet.x, bullet.y, '#67e8f9', this.perf.bombBulletParticles);
                 });
 
                 const enemies = [...this.enemies];
                 this.enemies = [];
+                let dropsSpawned = 0;
                 enemies.forEach((enemy) => {
-                    this.registerKill(40, enemy.x, enemy.y, '#22d3ee', 14, true);
-                    this.spawnDrop(enemy.x, enemy.y);
+                    this.registerKill(40, enemy.x, enemy.y, '#22d3ee', this.perf.bombEnemyParticles, true);
+                    if (dropsSpawned < this.perf.bombDropCap) {
+                        this.spawnDrop(enemy.x, enemy.y);
+                        dropsSpawned += 1;
+                    }
                 });
 
                 this.hazards = this.hazards.filter((hazard) => {
@@ -854,7 +910,7 @@
                     const hazardY = typeof hazard.y === 'number' ? hazard.y : this.player.y;
                     const distant = Math.hypot(hazardX - this.player.x, hazardY - this.player.y) > radius;
                     if (!distant) {
-                        this.explode(hazardX, hazardY, '#22d3ee', 12);
+                        this.explode(hazardX, hazardY, '#22d3ee', this.perf.bombHazardParticles);
                     }
                     return distant;
                 });
@@ -868,7 +924,7 @@
                     }
                 }
 
-                this.updateHUD();
+                this.requestHUDUpdate();
             }
 
             start() {
@@ -904,7 +960,8 @@
                 bossContainer.classList.add('hidden');
                 scoreEl.innerText = '0';
                 startBackgroundMusic();
-                this.updateHUD();
+                this.requestHUDUpdate();
+                this.flushHUDUpdate(true);
             }
 
             gameOver() {
@@ -1087,7 +1144,6 @@
                 const boss = this.boss;
                 this.explode(boss.x, boss.y, '#fbbf24', 70);
                 this.score += 1500;
-                scoreEl.innerText = this.score;
                 this.bossDefeatAnim = {
                     x: boss.x,
                     y: boss.y,
@@ -1138,7 +1194,9 @@
             }
 
             explode(x, y, color, count = 12) {
-                for (let i = 0; i < count; i++) {
+                const particleScale = this.perf?.particleScale ?? 1;
+                const burstCount = Math.max(1, Math.round(count * particleScale));
+                for (let i = 0; i < burstCount; i++) {
                     const angle = Math.random()*Math.PI*2; const spd = Math.random()*5+2;
                     this.particles.spawn(x, y, color, Math.random()*4+1, Math.cos(angle)*spd, Math.sin(angle)*spd, 25);
                 }
@@ -1167,12 +1225,22 @@
                 }
                 const bonus = basePoints * this.comboMultiplier;
                 this.score += bonus;
-                scoreEl.innerText = this.score;
                 this.explode(x, y, color, particleCount);
+                this.requestHUDUpdate();
+            }
+
+            requestHUDUpdate() {
+                this.hudDirty = true;
+            }
+
+            flushHUDUpdate(force = false) {
+                if (!force && !this.hudDirty) return;
+                this.hudDirty = false;
                 this.updateHUD();
             }
 
             updateHUD() {
+                scoreEl.innerText = this.score;
                 const healthPct = Math.max(0, Math.floor((this.player.hp / this.player.maxHp) * 100));
                 const shieldPct = Math.max(0, Math.floor((this.player.shield / this.player.maxShield) * 100));
                 healthDisplay.innerText = `${this.player.hp} / ${this.player.maxHp}`;
@@ -1208,11 +1276,13 @@
 
                 this.player.hitTimer = 45;
                 this.resetCombo();
-                this.updateHUD();
+                this.requestHUDUpdate();
 
                 if (this.player.hp <= 0) {
                     this.gameOver();
                 }
+
+                this.flushHUDUpdate();
             }
 
             pruneFormation(rootId) {
@@ -1479,11 +1549,14 @@
                 } else if (drop.type === 'weapon') {
                     this.activateWeapon(drop.weaponMode);
                 }
-                this.updateHUD();
+                this.requestHUDUpdate();
             }
 
             update(delta) {
-                if (this.state !== 'PLAYING') return;
+                if (this.state !== 'PLAYING') {
+                    this.flushHUDUpdate();
+                    return;
+                }
 
                 this.updateBossDefeatAnim(delta);
                 const followLerp = this.controlMode === 'touch' ? 1 : CONFIG.playerLerp;
@@ -1696,7 +1769,7 @@
 
                 this.player.x = Math.min(this.width - 18, Math.max(18, this.player.x));
                 this.player.y = Math.min(this.height - 18, Math.max(18, this.player.y));
-                this.updateHUD();
+                this.requestHUDUpdate();
             }
 
             draw() {
