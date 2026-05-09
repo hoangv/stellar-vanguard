@@ -624,8 +624,12 @@
 
         // --- GAME ENGINE ---
         class ParticleSystem {
-            constructor() { this.particles = []; }
+            constructor() {
+                this.particles = [];
+                this.maxParticles = 240;
+            }
             spawn(x, y, color, size, vx, vy, life) {
+                if (this.particles.length >= this.maxParticles) return;
                 this.particles.push({ x, y, color, size, vx, vy, life, maxLife: life });
             }
             update(ctx) {
@@ -701,10 +705,12 @@
                 this.formations = new Map();
                 this.formationSeed = 0;
                 this.controlMode = 'mouse';
+                this.syncParticleBudget();
 
                 const handleInput = (e) => {
                     const t = e.touches ? e.touches[0] : e;
                     this.controlMode = e.touches ? 'touch' : 'mouse';
+                    this.syncParticleBudget();
                     this.input.x = t.clientX;
                     this.input.y = t.clientY - 28;
                 };
@@ -726,6 +732,10 @@
                 bestEl.innerText = this.highScore;
                 this.updateHUD();
                 this.loop();
+            }
+
+            syncParticleBudget() {
+                this.particles.maxParticles = this.controlMode === 'touch' ? 120 : 240;
             }
 
             resize() {
@@ -1125,9 +1135,13 @@
             }
 
             explode(x, y, color, count = 12) {
-                for (let i = 0; i < count; i++) {
+                const isTouch = this.controlMode === 'touch';
+                const burst = Math.max(1, Math.round(count * (isTouch ? 0.45 : 1)));
+                const life = isTouch ? 16 : 25;
+                const sizeScale = isTouch ? 0.8 : 1;
+                for (let i = 0; i < burst; i++) {
                     const angle = Math.random()*Math.PI*2; const spd = Math.random()*5+2;
-                    this.particles.spawn(x, y, color, Math.random()*4+1, Math.cos(angle)*spd, Math.sin(angle)*spd, 25);
+                    this.particles.spawn(x, y, color, (Math.random()*4+1) * sizeScale, Math.cos(angle)*spd, Math.sin(angle)*spd, life);
                 }
             }
 
