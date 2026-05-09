@@ -700,11 +700,13 @@
                 this.nextHazardAt = 0;
                 this.formations = new Map();
                 this.formationSeed = 0;
+                this.controlMode = 'mouse';
 
                 const handleInput = (e) => {
                     const t = e.touches ? e.touches[0] : e;
+                    this.controlMode = e.touches ? 'touch' : 'mouse';
                     this.input.x = t.clientX;
-                    this.input.y = t.clientY - 40;
+                    this.input.y = t.clientY - 28;
                 };
                 window.addEventListener('mousemove', handleInput);
                 window.addEventListener('touchmove', (e) => {
@@ -1465,8 +1467,14 @@
                 if (this.state !== 'PLAYING') return;
 
                 this.updateBossDefeatAnim(delta);
-                this.player.x += (this.input.x - this.player.x) * CONFIG.playerLerp;
-                this.player.y += (this.input.y - this.player.y) * CONFIG.playerLerp;
+                const followLerp = this.controlMode === 'touch' ? 1 : CONFIG.playerLerp;
+                if (followLerp >= 1) {
+                    this.player.x = this.input.x;
+                    this.player.y = this.input.y;
+                } else {
+                    this.player.x += (this.input.x - this.player.x) * followLerp;
+                    this.player.y += (this.input.y - this.player.y) * followLerp;
+                }
                 this.player.x = Math.min(this.width - 18, Math.max(18, this.player.x));
                 this.player.y = Math.min(this.height - 18, Math.max(18, this.player.y));
                 if (this.player.hitTimer > 0) this.player.hitTimer--;
