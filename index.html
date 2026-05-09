@@ -103,41 +103,41 @@
 
         #player-status-container {
             position: absolute;
-            top: 72px;
-            left: 14px;
+            top: 66px;
+            left: 12px;
             z-index: 6;
             pointer-events: none;
-            width: min(220px, calc(100vw - 28px));
+            width: min(188px, calc(100vw - 24px));
         }
 
         .status-card {
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(12px);
+            background: rgba(0, 0, 0, 0.52);
+            backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 9px 10px;
+            border-radius: 12px;
+            padding: 7px 8px;
             color: white;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+            box-shadow: 0 8px 22px rgba(0, 0, 0, 0.2);
         }
 
         .status-row {
             display: flex;
             justify-content: space-between;
-            gap: 12px;
-            font-size: 9px;
+            gap: 8px;
+            font-size: 8px;
             text-transform: uppercase;
-            letter-spacing: 0.14em;
-            margin-bottom: 4px;
-            opacity: 0.82;
+            letter-spacing: 0.12em;
+            margin-bottom: 3px;
+            opacity: 0.8;
         }
 
         .meter {
             width: 100%;
-            height: 6px;
+            height: 5px;
             border-radius: 9999px;
             overflow: hidden;
             background: rgba(15, 23, 42, 0.8);
-            margin-bottom: 7px;
+            margin-bottom: 5px;
         }
 
         .meter-fill {
@@ -153,23 +153,23 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-height: 24px;
-            padding: 0 10px;
+            min-height: 18px;
+            padding: 0 7px;
             border-radius: 9999px;
             background: rgba(255, 255, 255, 0.08);
             color: #e2e8f0;
-            font-size: 11px;
+            font-size: 9px;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            margin-top: 6px;
-            margin-right: 6px;
+            letter-spacing: 0.06em;
+            margin-top: 4px;
+            margin-right: 4px;
         }
 
         .active-effects {
             display: flex;
             flex-wrap: wrap;
-            gap: 4px;
-            margin-top: 6px;
+            gap: 3px;
+            margin-top: 4px;
         }
 
         .loadout-grid {
@@ -219,19 +219,25 @@
 
         .ability-btn {
             width: 100%;
-            margin-top: 10px;
-            border-radius: 14px;
+            margin-top: 6px;
+            border-radius: 10px;
             border: 1px solid rgba(34, 211, 238, 0.35);
             background: linear-gradient(180deg, rgba(34, 211, 238, 0.18), rgba(8, 15, 36, 0.9));
             color: #cffafe;
-            padding: 10px 12px;
-            font-size: 11px;
+            padding: 6px 8px;
+            font-size: 10px;
             font-weight: 900;
-            letter-spacing: 0.12em;
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            padding: 8px 10px;
             transition: transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease;
             pointer-events: auto;
+        }
+
+        .build-tag {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.2em;
+            color: rgba(125, 211, 252, 0.82);
         }
 
         .ability-btn:hover {
@@ -248,9 +254,9 @@
         @media (pointer: coarse), (max-width: 820px) {
             #player-status-container {
                 top: auto;
-                bottom: calc(env(safe-area-inset-bottom, 18px) + 18px);
-                left: 14px;
-                width: min(320px, calc(100vw - 28px));
+                bottom: calc(env(safe-area-inset-bottom, 12px) + 10px);
+                left: 10px;
+                width: min(176px, calc(100vw - 20px));
             }
         }
     </style>
@@ -259,10 +265,11 @@
 
     <div id="ui-layer">
         <div class="flex justify-between items-start w-full">
-            <div class="bg-black/60 backdrop-blur-md p-3 rounded-xl border border-white/10 min-w-[100px]">
+            <div class="bg-black/60 backdrop-blur-md p-2.5 rounded-xl border border-white/10 min-w-[92px]">
                 <div class="text-[10px] uppercase tracking-widest opacity-60">Score</div>
-                <div id="score-display" class="text-xl font-black tabular-nums">0</div>
+                <div id="score-display" class="text-lg font-black tabular-nums">0</div>
                 <div class="text-[9px] mt-0.5 opacity-40">BEST: <span id="best-display">0</span></div>
+                <div id="build-display" class="build-tag mt-0.5">Build v1.7</div>
             </div>
             
             <div id="boss-health-container" class="hidden flex-1 ml-4 bg-black/60 backdrop-blur-md p-2 rounded-xl border border-red-500/30">
@@ -309,6 +316,7 @@
     <div id="screen-start" class="screen">
         <div class="mb-2 text-blue-400 font-bold tracking-[0.3em] text-sm">DEEP SPACE COMMAND</div>
         <h1 class="text-5xl md:text-7xl font-black italic text-white mb-6 tracking-tighter leading-none">STELLAR<br><span class="text-blue-500">VANGUARD</span></h1>
+        <div id="title-build-display" class="build-tag mb-4">Build v1.7</div>
         <p class="text-gray-400 max-w-xs text-sm leading-relaxed mb-4">Touch and drag to navigate. Your ship fires automatically. Destroy invaders and survive the boss encounter.</p>
         <div class="w-full max-w-md mb-4">
             <div class="text-[10px] uppercase tracking-[0.3em] text-blue-300/80 mb-2">Ship Loadouts</div>
@@ -340,8 +348,11 @@
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const bgm = document.getElementById('bgm');
+        const GAME_VERSION = 'v1.7';
         const scoreEl = document.getElementById('score-display');
         const bestEl = document.getElementById('best-display');
+        const buildDisplay = document.getElementById('build-display');
+        const titleBuildDisplay = document.getElementById('title-build-display');
         const finalScoreEl = document.getElementById('final-score');
         const finalBestEl = document.getElementById('final-best');
         const bossBar = document.getElementById('boss-health-bar');
@@ -357,6 +368,8 @@
         const smartBombButton = document.getElementById('smart-bomb-button');
         const loadoutGrid = document.getElementById('loadout-grid');
         const loadoutDetail = document.getElementById('loadout-detail');
+        if (buildDisplay) buildDisplay.innerText = `Build ${GAME_VERSION}`;
+        if (titleBuildDisplay) titleBuildDisplay.innerText = `Build ${GAME_VERSION}`;
         const DEFAULT_MUSIC_TRACKS = [
             'music/Lunar_Breach.mp3',
             'music/Solar_Barrage.mp3',
@@ -624,12 +637,8 @@
 
         // --- GAME ENGINE ---
         class ParticleSystem {
-            constructor() {
-                this.particles = [];
-                this.maxParticles = 240;
-            }
+            constructor() { this.particles = []; }
             spawn(x, y, color, size, vx, vy, life) {
-                if (this.particles.length >= this.maxParticles) return;
                 this.particles.push({ x, y, color, size, vx, vy, life, maxLife: life });
             }
             update(ctx) {
@@ -705,12 +714,10 @@
                 this.formations = new Map();
                 this.formationSeed = 0;
                 this.controlMode = 'mouse';
-                this.syncParticleBudget();
 
                 const handleInput = (e) => {
                     const t = e.touches ? e.touches[0] : e;
                     this.controlMode = e.touches ? 'touch' : 'mouse';
-                    this.syncParticleBudget();
                     this.input.x = t.clientX;
                     this.input.y = t.clientY - 28;
                 };
@@ -732,10 +739,6 @@
                 bestEl.innerText = this.highScore;
                 this.updateHUD();
                 this.loop();
-            }
-
-            syncParticleBudget() {
-                this.particles.maxParticles = this.controlMode === 'touch' ? 120 : 240;
             }
 
             resize() {
@@ -1135,13 +1138,9 @@
             }
 
             explode(x, y, color, count = 12) {
-                const isTouch = this.controlMode === 'touch';
-                const burst = Math.max(1, Math.round(count * (isTouch ? 0.45 : 1)));
-                const life = isTouch ? 16 : 25;
-                const sizeScale = isTouch ? 0.8 : 1;
-                for (let i = 0; i < burst; i++) {
+                for (let i = 0; i < count; i++) {
                     const angle = Math.random()*Math.PI*2; const spd = Math.random()*5+2;
-                    this.particles.spawn(x, y, color, (Math.random()*4+1) * sizeScale, Math.cos(angle)*spd, Math.sin(angle)*spd, life);
+                    this.particles.spawn(x, y, color, Math.random()*4+1, Math.cos(angle)*spd, Math.sin(angle)*spd, 25);
                 }
             }
 
@@ -1376,18 +1375,24 @@
                         ctx.save();
                         ctx.translate(hazard.x, hazard.y);
                         ctx.strokeStyle = 'rgba(96, 165, 250, 0.32)';
-                        ctx.lineWidth = 3;
+                        ctx.lineWidth = 2.5;
                         ctx.beginPath();
-                        ctx.arc(0, 0, hazard.radius, 0, Math.PI * 2);
+                        ctx.moveTo(0, -hazard.radius);
+                        ctx.lineTo(hazard.radius * 0.58, 0);
+                        ctx.lineTo(0, hazard.radius);
+                        ctx.lineTo(-hazard.radius * 0.58, 0);
+                        ctx.closePath();
                         ctx.stroke();
                         ctx.strokeStyle = 'rgba(34, 211, 238, 0.2)';
                         ctx.beginPath();
-                        ctx.arc(0, 0, hazard.radius * 0.66, 0, Math.PI * 2);
+                        ctx.moveTo(0, -hazard.radius * 0.46);
+                        ctx.lineTo(hazard.radius * 0.28, 0);
+                        ctx.lineTo(0, hazard.radius * 0.46);
+                        ctx.lineTo(-hazard.radius * 0.28, 0);
+                        ctx.closePath();
                         ctx.stroke();
-                        ctx.fillStyle = 'rgba(34, 211, 238, 0.08)';
-                        ctx.beginPath();
-                        ctx.arc(0, 0, hazard.radius * 0.32, 0, Math.PI * 2);
-                        ctx.fill();
+                        ctx.fillStyle = 'rgba(34, 211, 238, 0.1)';
+                        ctx.fillRect(-3, -hazard.radius * 0.24, 6, hazard.radius * 0.48);
                         ctx.restore();
                     }
                 }
